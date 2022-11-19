@@ -7,43 +7,39 @@
  */
 int _printf(const char *format, ...)
 {
-	int k = 0;
-	va_list ap;
-	char *p, *start;
+	int (*pfunc)(va_list, flags_t *);
+	const char *p;
+	va_list arguments;
+	flags_t flags = {0, 0, 0};
 
-	params_t params = PARAMS_INIT;
 
-	va_start(ap, format);
+	register int cnt = 0;
 
-	if (!format || (format[0] == '%' && !format[1]))/* check for NULL char */
+	va_start(arguments, format);
+	if (!format || (format[0] == '%' && !format[1]))
 		return (-1);
 	if (format[0] == '%' && format[1] == ' ' && !format[2])
 		return (-1);
-	for (p = (char *)format; *p; p++)
+	for (p = format; *p; p++)
 	{
-		init_params(&params, ap);
-		if (*p != '%')/*check for the % specifier*/
-		{
-			k += _putchar(*p);
-			continue;
-		}
-		start = p;
-		p++;
-		while (get_flag(p, &params))
+		if (*p == '%')
 		{
 			p++;
-		}
-		p = get_width(p, &params, ap);
-		p = get_precision(p, &params, ap);
-		if (get_modifier(p, &params))
-			p++;
-		if (!get_specifier(p))
-			k += print_from_to(start, p,
-					params.l_modifier || params.h_modifier ? p - 1 : 0);
-		else
-			k += get_print_func(p, ap, &params);
+			if (*p == '%')
+			{
+				cnt += _putchar('%');
+				continue;
+			}
+			while (get_flag(*p, &flags))
+				p++;
+			pfunc = get_print(*p);
+			cnt += (pfunc)
+				? pfunc(arguments, &flags)
+				: _printf("%%%c", *p);
+		} else
+			cnt += _putchar(*p);
 	}
-	_putchar(BUF_FLUSH);
-	va_end(ap);
-	return (k);
+	_putchar(-1);
+	va_end(arguments);
+	return (cnt);
 }
